@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unique Button Maker MEGA MAX</title>
+    <title>Unique Button Maker</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <script type="module" src="firebase-db.js"></script>
     <script src="app.js" defer></script>
 </head>
 <body>
 
     <div class="app-header">
         <h1>Unique Button Maker</h1>
-        <p class="subtitle">オリジナルのガチャボタンを作成・共有してルーレットに挑戦しよう</p>
+        <p class="subtitle">オリジナルのガチャボタンを作成してルーレットに挑戦しよう</p>
     </div>
 
     <div class="container" id="activePlayArea">
@@ -33,23 +32,26 @@
             <input type="text" id="btnName" placeholder="例：今日の運勢占い">
         </div>
         <div class="form-group">
-            <label>2. ルーレットの選択肢（カンマ「,」か改行で区切ってください）</label>
-            <textarea id="btnOutputs" placeholder="大吉, 中吉, 小吉, 凶, 大凶"></textarea>
+            <label>2. ルーレットの選択肢</label>
+            <div class="options-container" id="optionsGroup">
+                <div class="option-item">
+                    <input type="text" class="roulette-option-input" placeholder="選択肢 1">
+                </div>
+                <div class="option-item">
+                    <input type="text" class="roulette-option-input" placeholder="選択肢 2">
+                </div>
+            </div>
+            <button type="button" class="btn-add-option" onclick="addOptionField()">＋ 選択肢を追加</button>
         </div>
-        <button class="btn btn-create" onclick="createNewButton()">サーバーに保存して公開</button>
+        <button class="btn btn-create" onclick="createNewButton()">ボタンを作成して一覧に追加</button>
     </div>
 
     <div class="container" id="listArea">
         <div class="list-header">
-            <div class="tab-group">
-                <button id="tab-new" class="tab-btn active" onclick="switchTab('new')">新着順</button>
-                <button id="tab-popular" class="tab-btn" onclick="switchTab('popular')">人気順</button>
-            </div>
-            <button class="btn-refresh" onclick="refreshButtonList(true)">リスト更新</button>
+            <h2 class="section-title" style="margin:0;">🚀 ガチャボタン一覧</h2>
         </div>
         <div class="button-list" id="buttonListContainer">
-            <p class="loading-text">ボタンを読み込み中...</p>
-        </div>
+            </div>
     </div>
 
     <div class="overlay" id="rouletteOverlay">
