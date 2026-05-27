@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unique Button Maker MEGA MAX</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script type="module" src="firebase-db.js"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+    <div class="app-header">
+        <h1>Unique Button Maker</h1>
+        <p class="subtitle">オリジナルのガチャボタンを作成・共有してルーレットに挑戦しよう</p>
+    </div>
+
+    <div class="container" id="activePlayArea">
+        <h2 class="section-title" id="playingTitle">選択中のボタン</h2>
+        <div class="play-zone">
+            <div id="targetButton" class="play-btn" onclick="startRouletteOverlay()">ボタンを押してスタート</div>
+        </div>
+        <button class="btn btn-action btn-secondary" onclick="closePlayArea()">一覧に戻る</button>
+    </div>
+
+    <div class="container" id="creatorArea">
+        <h2 class="section-title">新規ガチャボタン作成</h2>
+        <div class="form-group">
+            <label>1. ボタンの名称</label>
+            <input type="text" id="btnName" placeholder="例：今日の運勢占い">
+        </div>
+        <div class="form-group">
+            <label>2. ルーレットの選択肢（カンマ「,」か改行で区切ってください）</label>
+            <textarea id="btnOutputs" placeholder="大吉, 中吉, 小吉, 凶, 大凶"></textarea>
+        </div>
+        <button class="btn btn-create" onclick="createNewButton()">サーバーに保存して公開</button>
+    </div>
+
+    <div class="container" id="listArea">
+        <div class="list-header">
+            <div class="tab-group">
+                <button id="tab-new" class="tab-btn active" onclick="switchTab('new')">新着順</button>
+                <button id="tab-popular" class="tab-btn" onclick="switchTab('popular')">人気順</button>
+            </div>
+            <button class="btn-refresh" onclick="refreshButtonList(true)">リスト更新</button>
+        </div>
+        <div class="button-list" id="buttonListContainer">
+            <p class="loading-text">ボタンを読み込み中...</p>
+        </div>
+    </div>
+
+    <div class="overlay" id="rouletteOverlay">
+        <div class="roulette-box">
+            <h2 id="rouletteTitle">抽選中</h2>
+            <div id="canvasContainer">
+                <div id="arrow"></div>
+                <canvas id="wheelCanvas" width="300" height="300"></canvas>
+            </div>
+            <div id="resultOutput" class="result-title">? ? ?</div>
+            <button id="spinBtn" class="btn btn-create" onclick="spinWheel()">ルーレットを開始</button>
+            <a id="twitterLink" class="btn btn-twitter" href="#" target="_blank" style="display: none;">結果をツイートする</a>
+            <button id="closeBtn" class="btn btn-action btn-secondary" onclick="closeOverlay()" style="display:none; margin-top:10px;">閉じる</button>
+        </div>
+    </div>
+
+</body>
+</html>
