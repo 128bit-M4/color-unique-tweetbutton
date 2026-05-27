@@ -3,77 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unique Button Maker</title>
+    <title>Color-Unique-tweetbtn</title>
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <script src="app.js" defer></script>
 </head>
 <body>
 
-    <div class="audio-control-panel">
-        <button id="audioMasterBtn" class="audio-toggle-btn active" onclick="window.toggleAudioMaster()">Sound: ON</button>
+    <div class="audio-placement">
+        <button id="audioMasterBtn" class="btn-sound active" onclick="window.toggleAudioMaster()">Sound ON</button>
     </div>
 
-    <div class="app-header">
-        <h1>Unique Button Maker</h1>
-        <p class="subtitle">オリジナルのガチャボタンを作成してルーレットに挑戦しよう</p>
+    <div class="header-area">
+        <h1 class="main-title">Color-Unique-tweetbtn</h1>
+        <div class="credit-text">
+            このサイトの作成者<br>
+            @128bit_M4
+        </div>
     </div>
 
-    <div class="container" id="activePlayArea" style="display: none;">
+    <div class="container-play" id="activePlayArea" style="display: none;">
         <h2 class="section-title" id="playingTitle">選択中のボタン</h2>
         <div class="play-zone">
             <div id="targetButton" class="play-btn" onclick="window.startRouletteOverlay()">ボタンを押してスタート</div>
         </div>
-        <button class="btn btn-action btn-secondary" onclick="window.closePlayArea()">一覧に戻る</button>
+        <button class="btn-form btn-back" onclick="window.closePlayArea()">一覧に戻る</button>
     </div>
 
-    <div class="container" id="creatorArea">
-        <h2 class="section-title" id="formTitle">新規ガチャボタン作成</h2>
-        <input type="hidden" id="editIndex" value="-1">
+    <div class="main-content-wrapper">
         
-        <div class="form-group">
-            <label>1. ボタンの名称</label>
-            <input type="text" id="btnName" placeholder="例：今日の運勢占い">
-        </div>
+        <div class="content-left">
+            <h2 class="section-title">新規ルーレットボタンを作成</h2>
+            
+            <div class="form-row">
+                <span class="form-label">ボタンの名前</span>
+                <input type="text" id="btnName" class="input-cute" placeholder="例：今日の運勢占い">
+            </div>
 
-        <div class="form-group">
-            <label>2. ルーレットの選択肢</label>
-            <div class="options-container" id="optionsGroup">
-                <div class="option-item">
-                    <input type="text" class="roulette-option-input" placeholder="選択肢 1">
+            <div class="form-row">
+                <span class="form-label">ボタンの色</span>
+                <div class="color-preview-box"></div> </div>
+
+            <div class="form-row">
+                <span class="form-label">選択肢の内容</span>
+                <div class="options-container" id="optionsGroup">
+                    <div class="option-item-row">
+                        <input type="text" class="roulette-option-input input-cute" placeholder="例：とても良い">
+                    </div>
+                    <div class="option-item-row">
+                        <input type="text" class="roulette-option-input input-cute" placeholder="例：普通">
+                        <button type="button" class="btn-plus" onclick="window.addOptionField()">+</button>
+                    </div>
                 </div>
-                <div class="option-item">
-                    <input type="text" class="roulette-option-input" placeholder="選択肢 2">
+            </div>
+
+            <div class="form-row" style="margin-top: 30px;">
+                <button class="btn-form btn-submit" id="submitBtn" onclick="window.createNewButton()">ボタン作成！</button>
+            </div>
+        </div>
+
+        <div class="vertical-divider"></div>
+
+        <div class="content-right" id="listArea">
+            <h2 class="section-title">ルーレットボタン一覧</h2>
+            <div class="button-list" id="buttonListContainer">
                 </div>
-            </div>
-            <button type="button" class="btn-add-option" onclick="window.addOptionField()">選択肢を追加</button>
-        </div>
-        <button class="btn btn-create" id="submitBtn" onclick="window.createNewButton()">ボタンを作成</button>
-    </div>
-
-    <div class="container" id="listArea">
-        <div class="list-header">
-            <h2 class="section-title" style="margin:0;">ガチャボタン一覧</h2>
-        </div>
-        <div class="button-list" id="buttonListContainer"></div>
-    </div>
-
-    <div class="overlay" id="shareModalOverlay">
-        <div class="roulette-box" style="max-width: 460px; text-align: left;">
-            <h3 style="margin-top: 0; color: #4f46e5; font-size: 1.2rem;">このボタンの共有リンク</h3>
-            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px; line-height: 1.4;">
-                生成された専用URLをコピーして共有するか、直接X(Twitter)に投稿することができます。
-            </p>
-            <div class="form-group">
-                <input type="text" id="generatedUrlInput" readonly onclick="this.select()" style="background: #f8fafc; font-family: monospace; font-size: 0.85rem; color: #4f46e5; border-color: #cbd5e0;">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-create" onclick="window.copyShareUrl()" style="flex: 1; padding: 12px; font-size: 0.95rem;">URLをコピー</button>
-                <a id="shareFormXLink" class="btn btn-twitter" href="#" target="_blank" style="flex: 1; margin: 0; padding: 12px; font-size: 0.95rem;">X(Twitter)で開く</a>
-            </div>
-            <button class="btn btn-action btn-secondary" onclick="window.closeShareModal()" style="margin-top: 15px; padding: 10px; font-size: 0.9rem; width: 100%;">閉じる</button>
         </div>
     </div>
 
@@ -84,21 +78,34 @@
                 <div id="arrow"></div>
                 <canvas id="wheelCanvas" width="300" height="300"></canvas>
             </div>
-            <div id="resultOutput" class="result-title">? ? ?</div>
-            <button id="spinBtn" class="btn btn-create" onclick="window.spinWheel()">ルーレットを開始</button>
-            <a id="twitterLink" class="btn btn-twitter" href="#" target="_blank" style="display: none;">結果をツイートする</a>
-            <button id="closeBtn" class="btn btn-action btn-secondary" onclick="window.closeOverlay()" style="display:none; margin-top:10px;">閉じる</button>
+            <div id="resultOutput" class="result-title">- - -</div>
+            <button id="spinBtn" class="btn-form btn-submit" onclick="window.spinWheel()">ルーレットを開始</button>
+            <a id="twitterLink" class="btn-twitter-share" href="#" target="_blank" style="display: none;">結果をツイートする</a>
+            <button id="closeBtn" class="btn-form btn-back" onclick="window.closeOverlay()" style="display:none; margin-top:10px;">閉じる</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="shareModalOverlay">
+        <div class="roulette-box" style="text-align: left;">
+            <h3 style="margin-top: 0; color: #1a365d;">このボタンの共有リンク</h3>
+            <p style="font-size: 0.85rem; color: #4a5568; margin-bottom: 15px;">URLをコピーするか、直接Xに投稿できます。</p>
+            <input type="text" id="generatedUrlInput" class="input-cute" readonly onclick="this.select()" style="background: #fff; margin-bottom: 15px;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-form btn-submit" onclick="window.copyShareUrl()" style="flex: 1; padding: 10px;">URLをコピー</button>
+                <a id="shareFormXLink" class="btn-twitter-share" href="#" target="_blank" style="flex: 1; padding: 10px; text-align: center; text-decoration: none;">Xで開く</a>
+            </div>
+            <button class="btn-form btn-back" onclick="window.closeShareModal()" style="margin-top: 15px; width: 100%;">閉じる</button>
         </div>
     </div>
 
     <div class="overlay" id="audioPromptOverlay" style="display: flex;">
-        <div class="roulette-box" style="max-width: 350px;">
-            <h3 style="margin-top: 0; color: #2d3748;">サウンド確認</h3>
-            <p style="font-size: 0.9rem; color: #718096; line-height: 1.6; margin-bottom: 25px;">
-                このウェブサイトはルーレット回転時や決定時に効果音が流れます。音声をONにして楽しんでください。
+        <div class="roulette-box">
+            <h3 style="margin-top: 0;">サウンド確認</h3>
+            <p style="font-size: 0.9rem; color: #4a5568; line-height: 1.5; margin-bottom: 20px;">
+                このサイトはルーレット時などに可愛い効果音が流れます。音声をONにして楽しんでください。
             </p>
-            <button class="btn btn-create" onclick="window.initAudio(true)" style="margin-bottom: 10px;">音声をONにして進む</button>
-            <button class="btn btn-action btn-secondary" onclick="window.initAudio(false)">ミュートのまま進む</button>
+            <button class="btn-form btn-submit" onclick="window.initAudio(true)" style="margin-bottom: 10px;">音声をONにして進む</button>
+            <button class="btn-form btn-back" onclick="window.initAudio(false)" style="width: 100%;">消音のまま進む</button>
         </div>
     </div>
 
