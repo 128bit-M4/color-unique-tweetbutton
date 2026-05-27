@@ -1,4 +1,8 @@
-const PRESET_BUTTONS = []; // プリセットを空にして完全に自作特化にしています
+const PRESET_BUTTONS = [
+    { name: "今日の晩ごはん決定ボタン", options: ["ラーメン", "カレーライス", "ハンバーグ", "お寿司", "パスタ", "うどん"] },
+    { name: "作業用BGMジャンル抽選器", options: ["Vocaloid", "Lo-Fi HipHop", "Synthwave", "Game Soundtrack", "J-POP"] },
+    { name: "次の休み中にやること", options: ["ゲームに補頭する", "コードを改造する", "部屋の模様替え", "一日中寝る", "映画を観る"] }
+];
 
 let isSoundEnabled = true;
 let currentButtonData = { name: "", options: [] };
@@ -50,12 +54,12 @@ window.initAudio = function(enable) {
     isSoundEnabled = enable;
     if (enable) {
         initAudioContext();
-        document.getElementById('audioMasterBtn').innerText = "Sound ON";
+        document.getElementById('audioMasterBtn').innerText = "Sound: ON";
         document.getElementById('audioMasterBtn').classList.add('active');
         playCuteTone(523.25, 0.1, 0.1);
         setTimeout(() => playCuteTone(659.25, 0.15, 0.1), 100);
     } else {
-        document.getElementById('audioMasterBtn').innerText = "Sound OFF";
+        document.getElementById('audioMasterBtn').innerText = "Sound: OFF";
         document.getElementById('audioMasterBtn').classList.remove('active');
     }
     document.getElementById('audioPromptOverlay').style.display = "none";
@@ -65,6 +69,7 @@ window.toggleAudioMaster = function() {
     window.initAudio(!isSoundEnabled);
 };
 
+// 安全なURLを生成する
 function generateButtonUrl(name, options) {
     const dataObj = { n: name, o: options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
@@ -107,16 +112,17 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addOptionField = function() {
     window.playClickSound();
     const group = document.getElementById('optionsGroup');
-    const currentCount = group.getElementsByClassName('option-item-row').length;
+    const currentCount = group.getElementsByClassName('option-item').length;
     if (currentCount >= 12) { alert('選択肢は最大12個までです。'); return; }
 
     const newItem = document.createElement('div');
-    newItem.className = 'option-item-row';
-    newItem.innerHTML = `<input type="text" class="roulette-option-input input-cute" placeholder="選択肢 ${currentCount + 1}">`;
+    newItem.className = 'option-item';
+    newItem.innerHTML = `<input type="text" class="roulette-option-input" placeholder="選択肢 ${currentCount + 1}">`;
     group.appendChild(newItem);
     newItem.querySelector('input').focus();
 };
 
+// 作成時は一覧に静かに保存
 window.createNewButton = function() {
     window.playClickSound();
     const name = document.getElementById('btnName').value.trim();
@@ -135,11 +141,14 @@ window.createNewButton = function() {
     let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     if (editIndex === -1) {
         localButtons.push({ name: name, options: options });
+        alert('新規ガチャボタンを一覧に保存しました！');
     } else {
         localButtons[editIndex] = { name: name, options: options };
         document.getElementById('editIndex').value = "-1";
-        document.getElementById('formTitle').innerText = "新規ルーレットボタンを作成";
-        document.getElementById('submitBtn').innerText = "ボタン作成！";
+        document.getElementById('formTitle').innerText = "新規ガチャボタン作成";
+        document.getElementById('submitBtn').innerText = "ボタンを作成";
+        document.getElementById('submitBtn').classList.remove('btn-action');
+        alert('変更内容を上書き保存しました！');
     }
 
     localStorage.setItem('user_created_buttons', JSON.stringify(localButtons));
@@ -147,13 +156,17 @@ window.createNewButton = function() {
     window.refreshButtonList();
 };
 
+// シェア専用のポップアップを開く
 window.openShareModal = function(name, optionsJsonStr) {
     window.playClickSound();
     const options = JSON.parse(decodeURIComponent(optionsJsonStr));
     const uniqueButtonUrl = generateButtonUrl(name, options);
+
     const text = `「${name}」というオリジナルガチャボタンを作ったよ！\nみんなもここから回してみてね！\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
+    
     document.getElementById('generatedUrlInput').value = uniqueButtonUrl;
     document.getElementById('shareFormXLink').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    
     document.getElementById('shareModalOverlay').style.display = "flex";
 };
 
@@ -169,56 +182,60 @@ window.copyShareUrl = function() {
     navigator.clipboard.writeText(copyTarget.value).then(() => {
         alert('共有リンクをクリップボードにコピーしました！');
     }).catch(() => {
-        alert('コピーに失敗しました。');
+        alert('コピーに失敗しました。枠内の文字を手動でコピーしてください。');
     });
 };
 
 function resetForm() {
     document.getElementById('btnName').value = "";
     document.getElementById('optionsGroup').innerHTML = `
-        <div class="option-item-row"><input type="text" class="roulette-option-input input-cute" placeholder="例：とても良い"></div>
-        <div class="option-item-row">
-            <input type="text" class="roulette-option-input input-cute" placeholder="例：普通">
-            <button type="button" class="btn-plus" onclick="window.addOptionField()">+</button>
-        </div>
+        <div class="option-item"><input type="text" class="roulette-option-input" placeholder="選択肢 1"></div>
+        <div class="option-item"><input type="text" class="roulette-option-input" placeholder="選択肢 2"></div>
     `;
 }
 
-// 🌟 修正：マイボタンがゼロの時はモックアップ通り「ルーレットはありません」を中央に配置する
 window.refreshButtonList = function() {
     const container = document.getElementById('buttonListContainer');
-    let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
-    
-    if (localButtons.length === 0) {
-        container.innerHTML = `<div class="no-items-text" style="text-align: center; padding-top: 40px;">ルーレットはありません</div>`;
-        return;
-    }
-
     container.innerHTML = "";
+    PRESET_BUTTONS.forEach(btn => {
+        renderItemRow(container, btn.name, btn.options, false, null);
+    });
+    let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     localButtons.forEach((btn, i) => {
-        renderItemRow(container, btn.name, btn.options, i);
+        renderItemRow(container, btn.name, btn.options, true, i);
     });
 };
 
-function renderItemRow(container, name, options, localIndex) {
+function renderItemRow(container, name, options, isUserCreated, localIndex) {
     const item = document.createElement('div');
     item.className = 'list-item-btn';
     const preview = options.join(', ');
     const optionsJsonStr = encodeURIComponent(JSON.stringify(options));
 
-    item.innerHTML = `
-        <div class="list-clickable-area" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">
-            <div class="list-info">
-                ${name}
-                <span style="font-size:0.85rem; color:#555;">選択肢: ${preview}</span>
-            </div>
-        </div>
-        <div class="list-actions">
+    let actionHtml = "";
+    if (!isUserCreated) {
+        actionHtml = `
+            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
+            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
+            <div class="badge-preset">おすすめ</div>
+        `;
+    } else {
+        actionHtml = `
             <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
             <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
             <button class="btn-edit" onclick="window.startEdit('${localIndex}')">編集</button>
             <button class="btn-delete" onclick="window.startDelete('${localIndex}')">削除</button>
+        `;
+    }
+
+    item.innerHTML = `
+        <div class="list-clickable-area" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">
+            <div class="list-info">
+                ${name}
+                <span>選択肢: ${preview}</span>
+            </div>
         </div>
+        <div class="list-actions">${actionHtml}</div>
     `;
     container.appendChild(item);
 }
@@ -233,22 +250,17 @@ window.startEdit = function(localIndex) {
     document.getElementById('btnName').value = btn.name;
     document.getElementById('formTitle').innerText = "ボタンの内容を編集中";
     document.getElementById('submitBtn').innerText = "修正内容を上書き保存する";
+    document.getElementById('submitBtn').classList.add('btn-action');
 
     const group = document.getElementById('optionsGroup');
     group.innerHTML = "";
     btn.options.forEach((opt, i) => {
         const newItem = document.createElement('div');
-        newItem.className = 'option-item-row';
-        if (i === btn.options.length - 1) {
-            newItem.innerHTML = `
-                <input type="text" class="roulette-option-input input-cute" value="${opt}">
-                <button type="button" class="btn-plus" onclick="window.addOptionField()">+</button>
-            `;
-        } else {
-            newItem.innerHTML = `<input type="text" class="roulette-option-input input-cute" value="${opt}">`;
-        }
+        newItem.className = 'option-item';
+        newItem.innerHTML = `<input type="text" class="roulette-option-input" value="${opt}" placeholder="選択肢 ${i + 1}">`;
         group.appendChild(newItem);
     });
+    document.getElementById('creatorArea').scrollIntoView({ behavior: 'smooth' });
 };
 
 window.startDelete = function(localIndex) {
@@ -268,6 +280,8 @@ window.selectButton = function(name, options) {
     const playArea = document.getElementById('activePlayArea');
     if (playArea && options && options.length >= 2) {
         playArea.style.display = "block";
+        document.getElementById('creatorArea').style.display = "none";
+        document.getElementById('listArea').style.display = "none";
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 };
@@ -275,10 +289,15 @@ window.selectButton = function(name, options) {
 window.closePlayArea = function() {
     window.playClickSound();
     document.getElementById('activePlayArea').style.display = "none";
+    document.getElementById('creatorArea').style.display = "block";
+    document.getElementById('listArea').style.display = "block";
 };
 
 window.startRouletteOverlay = function() {
-    if (!currentButtonData.options || currentButtonData.options.length < 2) return;
+    if (!currentButtonData.options || currentButtonData.options.length < 2) {
+        alert("ボタンが選択されていません。");
+        return;
+    }
     window.playClickSound();
     document.getElementById('rouletteOverlay').style.display = "flex";
     document.getElementById('rouletteTitle').innerText = currentButtonData.name;
@@ -352,12 +371,16 @@ function easeOut(t, b, c, d) { const ts = (t /= d) * t; const tc = ts * t; retur
 function setupTwitterButton(result) {
     const tweetBtn = document.getElementById('twitterLink'); 
     const closeBtn = document.getElementById('closeBtn');
+    
     const dataObj = { n: currentButtonData.name, o: currentButtonData.options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
-    const base64 = btoa(jsonStr).replace(/=/g, '%3D');
-    const uniqueButtonUrl = `https://128bit-m4.github.io/color-unique-tweetbutton/?b=${base64}`;
+    const base64 = btoa(jsonStr);
+    const safeBase64 = base64.replace(/=/g, '%3D');
+    const uniqueButtonUrl = `https://128bit-m4.github.io/color-unique-tweetbutton/?b=${safeBase64}`;
     
     const text = `「${currentButtonData.name}」のルーレット結果：【 ${result} 】\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
+    
     tweetBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    tweetBtn.style.display = "block"; closeBtn.style.display = "block";
+    tweetBtn.style.display = "block"; 
+    closeBtn.style.display = "block";
 }
