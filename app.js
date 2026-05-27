@@ -1,17 +1,9 @@
-// 🎁 おすすめボタンリスト（固定プリセット）
+// 🎁 固定おすすめプリセットボタン
 const PRESET_BUTTONS = [
     { name: "今日の晩ごはん決定ボタン", options: ["ラーメン", "カレーライス", "ハンバーグ", "お寿司", "パスタ", "うどん"] },
     { name: "作業用BGMジャンル抽選器", options: ["Vocaloid", "Lo-Fi HipHop", "Synthwave", "Game Soundtrack", "J-POP"] },
     { name: "次の休み中にやること", options: ["ゲームに没頭する", "コードを改造する", "部屋の模様替え", "一日中寝る", "映画を観る"] }
 ];
-
-// 🎵 音声オブジェクトの生成（フリー素材ライブラリのパブリック音源をセット）
-// 回転中：ずっとループするシンセベースのドラム音
-const bgmSpin = new Audio("https://actions.google.com/sounds/v1/science_fiction/teleport.ogg");
-bgmSpin.loop = true; 
-
-// 決定時：カキーン！という綺麗なファンファーレ・成功音
-const seWin = new Audio("https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg");
 
 let isSoundEnabled = true; // 全体ミュートフラグ
 
@@ -25,35 +17,80 @@ let spinTime = 0;
 let spinTimeTotal = 0;
 let ctx;
 
+// 🔊 ブラウザの機能で「可愛い・ポップ」な音を作るシステム
+let audioCtx = null;
+
+function initAudioContext() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+// 柔らかい音を作るための汎用関数
+function playCuteTone(frequency, duration, volume = 0.1, type = 'sine') {
+    if (!isSoundEnabled || !audioCtx) return;
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; // 丸い音のsine
+        osc.frequency.value = frequency;
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        // 出だしの角を丸くし、おわりの余韻をぽわんと残す音響設定
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+    } catch(e) { console.log(e); }
+}
+
+// 🔊 ① ボタンを押したときの「ぷにっ」という可愛いクリック音
+function playClickSound() {
+    initAudioContext();
+    playCuteTone(880, 0.08, 0.12, 'sine');
+}
+
+// 🔊 ② ルーレット回転中の「ぽぽぽぽぽっ」という可愛いタイマー音
+let lastTargetIndex = -1;
+function playTickSound() {
+    playCuteTone(440, 0.05, 0.08, 'sine');
+}
+
+/* --- 起動・音量管理 --- */
 window.addEventListener('DOMContentLoaded', () => {
     renderButtonList();
 });
 
-// 🔊 初期ポップアップでユーザーが選択した時の処理
 function initAudio(enable) {
     isSoundEnabled = enable;
-    const btn = document.getElementById('audioMasterBtn');
     if (enable) {
-        btn.innerText = "🔊 Sound: ON";
-        btn.classList.add('active');
-        // ブラウザのロック解除用空再生
-        bgmSpin.play().then(() => bgmSpin.pause()).catch(() => {});
+        initAudioContext();
+        document.getElementById('audioMasterBtn').innerText = "🔊 Sound: ON";
+        document.getElementById('audioMasterBtn').classList.add('active');
+        // ポップアップを許可した合図の「ぴこーん」
+        playCuteTone(523.25, 0.1, 0.1);
+        setTimeout(() => playCuteTone(659.25, 0.15, 0.1), 100);
     } else {
-        btn.innerText = "🔇 Sound: OFF";
-        btn.classList.remove('active');
+        document.getElementById('audioMasterBtn').innerText = "🔇 Sound: OFF";
+        document.getElementById('audioMasterBtn').classList.remove('active');
     }
-    // 確認ポップアップを消去
     document.getElementById('audioPromptOverlay').style.display = "none";
 }
 
-// 🔊 画面右上のスイッチでON/OFFを手動切り替え
 function toggleAudioMaster() {
+    playClickSound();
     initAudio(!isSoundEnabled);
 }
 
-/* --- 作成・編集・削除コアロジック --- */
-
+/* --- 作成・編集・削除ロジック --- */
 function addOptionField() {
+    playClickSound();
     const group = document.getElementById('optionsGroup');
     const currentCount = group.getElementsByClassName('option-item').length;
     if (currentCount >= 12) { alert('選択肢は最大12個までです。'); return; }
@@ -65,8 +102,8 @@ function addOptionField() {
     newItem.querySelector('input').focus();
 }
 
-// ボタンの作成 ＆ 上書き編集の統合
 function createNewButton() {
+    playClickSound();
     const name = document.getElementById('btnName').value.trim();
     const inputElements = document.getElementsByClassName('roulette-option-input');
     const editIndex = parseInt(document.getElementById('editIndex').value);
@@ -83,15 +120,11 @@ function createNewButton() {
     let userButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     
     if (editIndex === -1) {
-        // 通常の新規作成
         userButtons.push({ name: name, options: options });
         alert('新しいマイボタンを作成しました！');
     } else {
-        // 既存データの編集（上書き）
         userButtons[editIndex] = { name: name, options: options };
         alert('ボタンの内容を上書き修正しました！');
-        
-        // フォームの状態を通常に戻す
         document.getElementById('editIndex').value = "-1";
         document.getElementById('formTitle').innerText = "新規ガチャボタン作成";
         document.getElementById('submitBtn').innerText = "ボタンを作成して一覧に追加";
@@ -104,7 +137,6 @@ function createNewButton() {
     renderButtonList();
 }
 
-// フォームのリセット
 function resetForm() {
     document.getElementById('btnName').value = "";
     document.getElementById('optionsGroup').innerHTML = `
@@ -113,34 +145,30 @@ function resetForm() {
     `;
 }
 
-// 削除処理
 function deleteButton(index) {
+    playClickSound();
     if (!confirm("このマイボタンを削除してもよろしいですか？")) return;
     
     let userButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
-    userButtons.splice(index, 1); // 指定要素を削除
+    userButtons.splice(index, 1);
     localStorage.setItem('user_created_buttons', JSON.stringify(userButtons));
-    
     renderButtonList();
 }
 
-// 編集モードへの移行
 function startEditButton(index) {
+    playClickSound();
     let userButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     const target = userButtons[index];
     if (!target) return;
 
-    // フォームに値を詰め込む
     document.getElementById('editIndex').value = index;
     document.getElementById('btnName').value = target.name;
     document.getElementById('formTitle').innerText = "🔧 ボタンの内容を編集中";
     document.getElementById('submitBtn').innerText = "修正内容を上書き保存する";
     
-    // 見た目を少し変えて編集感を出す
     document.getElementById('submitBtn').classList.remove('btn-create');
     document.getElementById('submitBtn').classList.add('btn-action');
 
-    // 選択肢入力欄の数を合わせて再構築
     const group = document.getElementById('optionsGroup');
     group.innerHTML = "";
     target.options.forEach((opt, i) => {
@@ -150,16 +178,13 @@ function startEditButton(index) {
         group.appendChild(newItem);
     });
     
-    // 入力エリアまで画面をスムーズスクロール
     document.getElementById('creatorArea').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ボタンリストの描画
 function renderButtonList() {
     const container = document.getElementById('buttonListContainer');
     container.innerHTML = "";
 
-    // 1. プリセット
     PRESET_BUTTONS.forEach(btn => {
         const item = document.createElement('div');
         item.className = 'list-item-btn';
@@ -176,7 +201,6 @@ function renderButtonList() {
         container.appendChild(item);
     });
 
-    // 2. 自作ボタン（編集・削除機能付き）
     let userButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     userButtons.forEach((btn, index) => {
         const item = document.createElement('div');
@@ -199,6 +223,7 @@ function renderButtonList() {
 }
 
 function selectButton(name, options) {
+    playClickSound();
     currentButtonData.name = name;
     currentButtonData.options = options;
     document.getElementById('playingTitle').innerText = `「${name}」をプレイ中`;
@@ -210,13 +235,15 @@ function selectButton(name, options) {
 }
 
 function closePlayArea() {
+    playClickSound();
     document.getElementById('activePlayArea').style.display = "none";
     document.getElementById('creatorArea').style.display = "block";
     document.getElementById('listArea').style.display = "block";
 }
 
-/* --- ルーレット & オーディオ同期システム --- */
+/* --- ルーレット & サウンド同期システム --- */
 function startRouletteOverlay() {
+    playClickSound();
     document.getElementById('rouletteOverlay').style.display = "flex";
     document.getElementById('rouletteTitle').innerText = currentButtonData.name;
     document.getElementById('resultOutput').innerText = "- - -";
@@ -227,10 +254,8 @@ function startRouletteOverlay() {
 }
 
 function closeOverlay() {
+    playClickSound();
     document.getElementById('rouletteOverlay').style.display = "none";
-    // 閉じる時に万が一音が残っていたら止める
-    bgmSpin.pause();
-    bgmSpin.currentTime = 0;
 }
 
 function drawRouletteWheel() {
@@ -266,17 +291,13 @@ function drawRouletteWheel() {
 }
 
 function spinWheel() {
+    playClickSound();
     document.getElementById('spinBtn').style.display = "none";
-    spinAngleStart = Math.random() * 10 + 10;
+    spinAngleStart = Math.random() * 10 + 12;
     spinTime = 0;
-    spinTimeTotal = Math.random() * 2000 + 3500;
+    spinTimeTotal = Math.random() * 2000 + 4000;
     
-    // 🔊 ルーレット回転音のスタート
-    if (isSoundEnabled) {
-        bgmSpin.currentTime = 0;
-        bgmSpin.play().catch(() => {});
-    }
-    
+    lastTargetIndex = -1;
     rotateWheel();
 }
 
@@ -286,14 +307,23 @@ function rotateWheel() {
     const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
     startAngle += (spinAngle * Math.PI / 180);
     drawRouletteWheel();
+
+    // 可愛いタイマー音の同期（コマが切り替わるたびに「ぽぽぽぽ…」）
+    const len = currentButtonData.options.length;
+    const degrees = startAngle * 180 / Math.PI + 90;
+    const arcd = arc * 180 / Math.PI;
+    const currentIndex = Math.floor((360 - (degrees % 360)) / arcd) % len;
+    
+    if (currentIndex !== lastTargetIndex) {
+        playTickSound();
+        lastTargetIndex = currentIndex;
+    }
+
     spinTimeout = setTimeout(rotateWheel, 30);
 }
 
 function stopRotateWheel() {
     clearTimeout(spinTimeout);
-    
-    // 🔊 回転音の停止
-    bgmSpin.pause();
     
     const len = currentButtonData.options.length;
     const degrees = startAngle * 180 / Math.PI + 90;
@@ -304,10 +334,16 @@ function stopRotateWheel() {
 
     document.getElementById('resultOutput').innerHTML = `【 ${resultText} 】に決定！`;
 
-    // 🔊 決定時のファンファーレ再生
+    // 🔊 ③ 決定時のゆるかわメロディ（てぃろてぃろりーん🌸）
     if (isSoundEnabled) {
-        seWin.currentTime = 0;
-        seWin.play().catch(() => {});
+        playCuteTone(523.25, 0.2, 0.1, 'sine'); // ド
+        setTimeout(() => playCuteTone(659.25, 0.2, 0.1, 'sine'), 80); // ミ
+        setTimeout(() => playCuteTone(783.99, 0.2, 0.1, 'sine'), 160); // ソ
+        setTimeout(() => playCuteTone(1046.50, 0.2, 0.1, 'sine'), 240); // 高いド
+        setTimeout(() => {
+            playCuteTone(1318.51, 0.5, 0.08, 'sine'); // 超高いミ
+            playCuteTone(1046.50, 0.5, 0.08, 'sine'); 
+        }, 320);
     }
 
     // 紙吹雪
@@ -322,7 +358,7 @@ function easeOut(t, b, c, d) {
     return b + c * (tc + -3 * ts + 3 * t);
 }
 
-// 指定されたツイートテンプレート
+// 🐦 要望通りのオリジナルツイート文面生成
 function setupTwitterButton(result) {
     const tweetBtn = document.getElementById('twitterLink');
     const closeBtn = document.getElementById('closeBtn');
