@@ -34,26 +34,29 @@ p.subtitle { margin: 0; font-weight: 500; color: var(--text-sub); font-size: 1re
 
 .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
-.form-group { margin-bottom: 20px; }
+.form-group { margin-bottom: 20px; width: 100%; display: block; }
 label { display: block; font-weight: 700; margin-bottom: 10px; font-size: 0.9rem; color: #4a5568; }
 
-/* 🛠️ 入力欄スタイル修正（タイポを直し、カプセル型に丸めて余白を調整） */
+/* 🛠️ 入力欄を絶対にカプセル型（丸型）にして幅いっぱいに広げる設定 */
 input[type="text"] {
-    width: 100%;
-    padding: 12px 20px;
-    border: 1px solid #cbd5e0;
-    border-radius: 24px;
+    display: block !important;
+    width: 100% !important;
+    padding: 14px 20px !important;
+    border: 1px solid #cbd5e0 !important;
+    border-radius: 30px !important; /* ➔ これで確実にぷっくりしたカプセル型になります */
     font-size: 1rem;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
     background: #f8fafc;
     color: var(--text-main);
     transition: all 0.2s;
 }
 input[type="text"]:focus { border-color: #667eea; outline: none; background: #ffffff; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
 
-.options-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-.option-item { display: flex; align-items: center; animation: fadeInOption 0.25s ease-out; }
+/* 🛠️ 選択肢の入力欄とボタンが横に潰れないように縦並びを保証する設定 */
+.options-container { display: block !important; width: 100%; margin-bottom: 12px; }
+.option-item { display: block !important; width: 100%; margin-bottom: 10px; animation: fadeInOption 0.25s ease-out; }
 @keyframes fadeInOption { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
 .btn-add-option { background: #ffffff; color: #4361ee; border: 2px dashed #4361ee; padding: 10px; width: 100%; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; }
 .btn-add-option:hover { background: #edf2f7; border-style: solid; }
 
