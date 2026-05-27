@@ -36,7 +36,19 @@ p.subtitle { margin: 0; font-weight: 500; color: var(--text-sub); font-size: 1re
 
 .form-group { margin-bottom: 20px; }
 label { display: block; font-weight: 700; margin-bottom: 10px; font-size: 0.9rem; color: #4a5568; }
-input type=["text"] { width: 100%; padding: 14px; border: 1px solid #cbd5e0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; background: #f8fafc; color: var(--text-main); }
+
+/* 🛠️ 入力欄スタイル修正（タイポを直し、カプセル型に丸めて余白を調整） */
+input[type="text"] {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid #cbd5e0;
+    border-radius: 24px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: #f8fafc;
+    color: var(--text-main);
+    transition: all 0.2s;
+}
 input[type="text"]:focus { border-color: #667eea; outline: none; background: #ffffff; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
 
 .options-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
