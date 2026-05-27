@@ -6,14 +6,17 @@
     <title>Unique Button Maker</title>
     <link rel="stylesheet" href="style.css">
     
+    <!-- 演出用：紙吹雪ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
+    <!-- メインロジック -->
     <script src="app.js" defer></script>
 </head>
 <body>
 
+    <!-- 🔊 音声コントロールバッジ -->
     <div class="audio-control-panel">
-        <button id="audioMasterBtn" class="audio-toggle-btn active" onclick="toggleAudioMaster()">🔊 Sound: ON</button>
+        <button id="audioMasterBtn" class="audio-toggle-btn active" onclick="window.toggleAudioMaster()">🔊 Sound: ON</button>
     </div>
 
     <div class="app-header">
@@ -21,22 +24,42 @@
         <p class="subtitle">オリジナルのガチャボタンを作成してルーレットに挑戦しよう</p>
     </div>
 
-    <div class="container" id="activePlayArea">
+    <!-- 🎯 プレイエリア（初期状態は完全に非表示） -->
+    <div class="container" id="activePlayArea" style="display: none !important;">
         <h2 class="section-title" id="playingTitle">選択中のボタン</h2>
         <div class="play-zone">
-            <div id="targetButton" class="play-btn" onclick="startRouletteOverlay()">ボタンを押してスタート</div>
+            <div id="targetButton" class="play-btn" onclick="window.startRouletteOverlay()">ボタンを押してスタート</div>
         </div>
-        <button class="btn btn-action btn-secondary" onclick="closePlayArea()">一覧に戻る</button>
+        <button class="btn btn-action btn-secondary" onclick="window.closePlayArea()">一覧に戻る</button>
     </div>
 
+    <!-- ボタン作成フォーム -->
     <div class="container" id="creatorArea">
         <h2 class="section-title" id="formTitle">新規ガチャボタン作成</h2>
-        <input type="hidden" id="editIndex" value="-1"> <div class="form-group">
+        <input type="hidden" id="editIndex" value="-1">
+        
+        <div class="form-group">
             <label>1. ボタンの名称</label>
             <input type="text" id="btnName" placeholder="例：今日の運勢占い">
         </div>
+
+        <!-- 🔒 公開・自分だけの選択オプション（Firebaseなし） -->
         <div class="form-group">
-            <label>2. ルーレットの選択肢</label>
+            <label>2. 保存・公開方法の選択</label>
+            <div class="privacy-selector">
+                <label class="radio-label">
+                    <input type="radio" name="btnPrivacy" value="local" checked onclick="window.playClickSound()">
+                    <span class="radio-custom"></span> 自分だけ（この端末に保存）
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="btnPrivacy" value="share" onclick="window.playClickSound()">
+                    <span class="radio-custom"></span> 全世界に公開（シェア用URLを発行）
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>3. ルーレットの選択肢</label>
             <div class="options-container" id="optionsGroup">
                 <div class="option-item">
                     <input type="text" class="roulette-option-input" placeholder="選択肢 1">
@@ -45,19 +68,30 @@
                     <input type="text" class="roulette-option-input" placeholder="選択肢 2">
                 </div>
             </div>
-            <button type="button" class="btn-add-option" onclick="addOptionField()">＋ 選択肢を追加</button>
+            <button type="button" class="btn-add-option" onclick="window.addOptionField()">＋ 選択肢を追加</button>
         </div>
-        <button class="btn btn-create" id="submitBtn" onclick="createNewButton()">ボタンを作成して一覧に追加</button>
+        <button class="btn btn-create" id="submitBtn" onclick="window.createNewButton()">ボタンを作成して追加</button>
     </div>
 
+    <!-- シェア用URLポップアップ表示エリア（全世界公開を選んだ時だけ出現） -->
+    <div class="container" id="shareUrlArea" style="display: none;">
+        <h2 class="section-title" style="color: #4f46e5;">🔗 全世界シェア用URLが完成しました！</h2>
+        <p style="font-size: 0.85rem; color: #718096; margin-bottom: 10px;">このURLをSNSに貼り付けたり友達に送ると、誰でもこのボタンで遊べます！</p>
+        <input type="text" id="shareUrlInput" readonly style="margin-bottom: 15px; background: #fff; border-color: #4f46e5;">
+        <button class="btn btn-create" style="background: linear-gradient(45deg, #4f46e5, #6366f1);" onclick="window.copyShareUrl()">📋 URLをコピーする</button>
+    </div>
+
+    <!-- ボタン一覧 -->
     <div class="container" id="listArea">
         <div class="list-header">
             <h2 class="section-title" style="margin:0;">🚀 ガチャボタン一覧</h2>
         </div>
         <div class="button-list" id="buttonListContainer">
-            </div>
+            <!-- JavaScriptで自動生成 -->
+        </div>
     </div>
 
+    <!-- ルーレット演出用オーバーレイ -->
     <div class="overlay" id="rouletteOverlay">
         <div class="roulette-box">
             <h2 id="rouletteTitle">抽選中</h2>
@@ -66,20 +100,21 @@
                 <canvas id="wheelCanvas" width="300" height="300"></canvas>
             </div>
             <div id="resultOutput" class="result-title">? ? ?</div>
-            <button id="spinBtn" class="btn btn-create" onclick="spinWheel()">ルーレットを開始</button>
+            <button id="spinBtn" class="btn btn-create" onclick="window.spinWheel()">ルーレットを開始</button>
             <a id="twitterLink" class="btn btn-twitter" href="#" target="_blank" style="display: none;">結果をツイートする</a>
-            <button id="closeBtn" class="btn btn-action btn-secondary" onclick="closeOverlay()" style="display:none; margin-top:10px;">閉じる</button>
+            <button id="closeBtn" class="btn btn-action btn-secondary" onclick="window.closeOverlay()" style="display:none; margin-top:10px;">閉じる</button>
         </div>
     </div>
 
+    <!-- 初回音量確認ポップアップ -->
     <div class="overlay" id="audioPromptOverlay" style="display: flex;">
         <div class="roulette-box" style="max-width: 350px;">
             <h3 style="margin-top: 0; color: #2d3748;">🔊 サウンド確認</h3>
             <p style="font-size: 0.9rem; color: #718096; line-height: 1.6; margin-bottom: 25px;">
-                このウェブサイトはルーレット回転時や決定時に**BGM・効果音（SE）**が流れます。音声をONにして楽しんでください！
+                このウェブサイトはルーレット回転時や決定時に**可愛い効果音**が流れます。音声をONにして楽しんでください！
             </p>
-            <button class="btn btn-create" onclick="initAudio(true)" style="margin-bottom: 10px;">音声をONにして進む</button>
-            <button class="btn btn-action btn-secondary" onclick="initAudio(false)">ミュート（消音）のまま進む</button>
+            <button class="btn btn-create" onclick="window.initAudio(true)" style="margin-bottom: 10px;">音声をONにして進む</button>
+            <button class="btn btn-action btn-secondary" onclick="window.initAudio(false)">ミュートのまま進む</button>
         </div>
     </div>
 
