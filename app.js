@@ -1,3 +1,4 @@
+// 🛠️ 不要なプリセットデータを削除して空にしました
 const PRESET_BUTTONS = [];
 
 let isSoundEnabled = true;
@@ -65,7 +66,6 @@ window.toggleAudioMaster = function() {
     window.initAudio(!isSoundEnabled);
 };
 
-// 安全なURLを生成する
 function generateButtonUrl(name, options) {
     const dataObj = { n: name, o: options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
@@ -118,7 +118,6 @@ window.addOptionField = function() {
     newItem.querySelector('input').focus();
 };
 
-// 作成時は一覧に静かに保存
 window.createNewButton = function() {
     window.playClickSound();
     const name = document.getElementById('btnName').value.trim();
@@ -152,7 +151,6 @@ window.createNewButton = function() {
     window.refreshButtonList();
 };
 
-// シェア専用のポップアップを開く
 window.openShareModal = function(name, optionsJsonStr) {
     window.playClickSound();
     const options = JSON.parse(decodeURIComponent(optionsJsonStr));
@@ -315,14 +313,33 @@ function drawRouletteWheel() {
         ctx.clearRect(0,0,300,300);
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 3;
+
         for(let i = 0; i < len; i++) {
             const angle = startAngle + i * arc;
             ctx.fillStyle = colors[i % colors.length];
-            ctx.beginPath(); ctx.moveTo(150, 150); ctx.arc(150, 150, 140, angle, angle + arc, false); ctx.lineTo(150, 150); ctx.fill(); ctx.stroke();
-            ctx.save(); ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px sans-serif";
-            ctx.translate(150 + Math.cos(angle + arc / 2) * 85, 150 + Math.sin(angle + arc / 2) * 85); ctx.rotate(angle + arc / 2 + Math.PI / 2);
+            ctx.beginPath(); 
+            ctx.moveTo(150, 150); 
+            ctx.arc(150, 150, 140, angle, angle + arc, false); 
+            ctx.lineTo(150, 150); 
+            ctx.fill(); 
+            ctx.stroke();
+
+            if (len >= 8) {
+                continue; 
+            }
+
+            ctx.save(); 
+            ctx.fillStyle = "#ffffff"; 
+            ctx.font = "bold 13px sans-serif";
+            
+            ctx.translate(150 + Math.cos(angle + arc / 2) * 88, 150 + Math.sin(angle + arc / 2) * 88); 
+            ctx.rotate(angle + arc / 2 + Math.PI / 2);
+            
             const text = currentButtonData.options[i];
-            ctx.fillText(text.length > 8 ? text.substring(0,7)+".." : text, -ctx.measureText(text).width / 2, 0); ctx.restore();
+            const safeText = text.length > 7 ? text.substring(0, 6) + ".." : text;
+            
+            ctx.fillText(safeText, -ctx.measureText(safeText).width / 2, 0); 
+            ctx.restore();
         }
     }
 }
