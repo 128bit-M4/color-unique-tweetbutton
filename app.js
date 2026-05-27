@@ -1,8 +1,4 @@
-const PRESET_BUTTONS = [
-    { name: "今日の晩ごはん決定ボタン", options: ["ラーメン", "カレーライス", "ハンバーグ", "お寿司", "パスタ", "うどん"] },
-    { name: "作業用BGMジャンル抽選器", options: ["Vocaloid", "Lo-Fi HipHop", "Synthwave", "Game Soundtrack", "J-POP"] },
-    { name: "次の休み中にやること", options: ["ゲームに没頭する", "コードを改造する", "部屋の模様替え", "一日中寝る", "映画を観る"] }
-];
+const PRESET_BUTTONS = []; // プリセットを空にして完全に自作特化にしています
 
 let isSoundEnabled = true;
 let currentButtonData = { name: "", options: [] };
@@ -16,6 +12,7 @@ let spinTime = 0;
 let spinTimeTotal = 0;
 let ctx;
 let audioCtx = null;
+let lastTargetIndex = -1;
 
 function initAudioContext() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -23,8 +20,10 @@ function initAudioContext() {
 }
 
 function playCuteTone(frequency, duration, volume = 0.1, type = 'sine') {
-    if (!isSoundEnabled || !audioCtx) return;
+    if (!isSoundEnabled) return;
     try {
+        initAudioContext();
+        if(!audioCtx) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = type;
@@ -33,14 +32,13 @@ function playCuteTone(frequency, duration, volume = 0.1, type = 'sine') {
         gain.connect(audioCtx.destination);
         osc.start();
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(volume, applicationContext.currentTime + 0.02);
+        gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
         osc.stop(audioCtx.currentTime + duration);
     } catch(e) { console.log(e); }
 }
 
 window.playClickSound = function() {
-    initAudioContext();
     playCuteTone(880, 0.08, 0.12, 'sine');
 };
 
@@ -52,23 +50,21 @@ window.initAudio = function(enable) {
     isSoundEnabled = enable;
     if (enable) {
         initAudioContext();
-        document.getElementById('audioMasterBtn').innerText = "Sound: ON";
+        document.getElementById('audioMasterBtn').innerText = "Sound ON";
         document.getElementById('audioMasterBtn').classList.add('active');
         playCuteTone(523.25, 0.1, 0.1);
         setTimeout(() => playCuteTone(659.25, 0.15, 0.1), 100);
     } else {
-        document.getElementById('audioMasterBtn').innerText = "Sound: OFF";
+        document.getElementById('audioMasterBtn').innerText = "Sound OFF";
         document.getElementById('audioMasterBtn').classList.remove('active');
     }
     document.getElementById('audioPromptOverlay').style.display = "none";
 };
 
 window.toggleAudioMaster = function() {
-    window.playClickSound();
     window.initAudio(!isSoundEnabled);
 };
 
-// 安全なURLを生成する（Twitterパラメータバグ対策済）
 function generateButtonUrl(name, options) {
     const dataObj = { n: name, o: options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
@@ -111,17 +107,16 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addOptionField = function() {
     window.playClickSound();
     const group = document.getElementById('optionsGroup');
-    const currentCount = group.getElementsByClassName('option-item').length;
+    const currentCount = group.getElementsByClassName('option-item-row').length;
     if (currentCount >= 12) { alert('選択肢は最大12個までです。'); return; }
 
     const newItem = document.createElement('div');
-    newItem.className = 'option-item';
-    newItem.innerHTML = `<input type="text" class="roulette-option-input" placeholder="選択肢 ${currentCount + 1}">`;
+    newItem.className = 'option-item-row';
+    newItem.innerHTML = `<input type="text" class="roulette-option-input input-cute" placeholder="選択肢 ${currentCount + 1}">`;
     group.appendChild(newItem);
     newItem.querySelector('input').focus();
 };
 
-// 🌟 修正：作成時は強制シェアせず、おとなしくマイボタンに保存する
 window.createNewButton = function() {
     window.playClickSound();
     const name = document.getElementById('btnName').value.trim();
@@ -140,14 +135,11 @@ window.createNewButton = function() {
     let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     if (editIndex === -1) {
         localButtons.push({ name: name, options: options });
-        alert('新規ガチャボタンを一覧に保存しました！');
     } else {
         localButtons[editIndex] = { name: name, options: options };
         document.getElementById('editIndex').value = "-1";
-        document.getElementById('formTitle').innerText = "新規ガチャボタン作成";
-        document.getElementById('submitBtn').innerText = "ボタンを作成";
-        document.getElementById('submitBtn').classList.remove('btn-action');
-        alert('変更内容を上書き保存しました！');
+        document.getElementById('formTitle').innerText = "新規ルーレットボタンを作成";
+        document.getElementById('submitBtn').innerText = "ボタン作成！";
     }
 
     localStorage.setItem('user_created_buttons', JSON.stringify(localButtons));
@@ -155,17 +147,13 @@ window.createNewButton = function() {
     window.refreshButtonList();
 };
 
-// 🌟 🆕 独立したシェアポップアップを開く処理（URLコピペ用もここへ）
 window.openShareModal = function(name, optionsJsonStr) {
     window.playClickSound();
     const options = JSON.parse(decodeURIComponent(optionsJsonStr));
     const uniqueButtonUrl = generateButtonUrl(name, options);
-
     const text = `「${name}」というオリジナルガチャボタンを作ったよ！\nみんなもここから回してみてね！\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
-    
     document.getElementById('generatedUrlInput').value = uniqueButtonUrl;
     document.getElementById('shareFormXLink').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    
     document.getElementById('shareModalOverlay').style.display = "flex";
 };
 
@@ -181,63 +169,56 @@ window.copyShareUrl = function() {
     navigator.clipboard.writeText(copyTarget.value).then(() => {
         alert('共有リンクをクリップボードにコピーしました！');
     }).catch(() => {
-        alert('コピーに失敗しました。枠内の文字を手動でコピーしてください。');
+        alert('コピーに失敗しました。');
     });
 };
 
 function resetForm() {
     document.getElementById('btnName').value = "";
     document.getElementById('optionsGroup').innerHTML = `
-        <div class="option-item"><input type="text" class="roulette-option-input" placeholder="選択肢 1"></div>
-        <div class="option-item"><input type="text" class="roulette-option-input" placeholder="選択肢 2"></div>
+        <div class="option-item-row"><input type="text" class="roulette-option-input input-cute" placeholder="例：とても良い"></div>
+        <div class="option-item-row">
+            <input type="text" class="roulette-option-input input-cute" placeholder="例：普通">
+            <button type="button" class="btn-plus" onclick="window.addOptionField()">+</button>
+        </div>
     `;
 }
 
+// 🌟 修正：マイボタンがゼロの時はモックアップ通り「ルーレットはありません」を中央に配置する
 window.refreshButtonList = function() {
     const container = document.getElementById('buttonListContainer');
-    container.innerHTML = "";
-    PRESET_BUTTONS.forEach(btn => {
-        renderItemRow(container, btn.name, btn.options, false, null);
-    });
     let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
+    
+    if (localButtons.length === 0) {
+        container.innerHTML = `<div class="no-items-text" style="text-align: center; padding-top: 40px;">ルーレットはありません</div>`;
+        return;
+    }
+
+    container.innerHTML = "";
     localButtons.forEach((btn, i) => {
-        renderItemRow(container, btn.name, btn.options, true, i);
+        renderItemRow(container, btn.name, btn.options, i);
     });
 };
 
-// 🌟 修正：一覧アイテムに「回す」「シェア」の独立ボタンを綺麗に配置
-function renderItemRow(container, name, options, isUserCreated, localIndex) {
+function renderItemRow(container, name, options, localIndex) {
     const item = document.createElement('div');
     item.className = 'list-item-btn';
     const preview = options.join(', ');
     const optionsJsonStr = encodeURIComponent(JSON.stringify(options));
 
-    let actionHtml = "";
-    if (!isUserCreated) {
-        // おすすめプリセット用の配置
-        actionHtml = `
-            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
-            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
-            <div class="badge-preset">おすすめ</div>
-        `;
-    } else {
-        // 自作マイボタン用の配置（いつでも回せるし、いつでもシェアできる）
-        actionHtml = `
-            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
-            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
-            <button class="btn-edit" onclick="window.startEdit('${localIndex}')">編集</button>
-            <button class="btn-delete" onclick="window.startDelete('${localIndex}')">削除</button>
-        `;
-    }
-
     item.innerHTML = `
         <div class="list-clickable-area" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">
             <div class="list-info">
                 ${name}
-                <span>選択肢: ${preview}</span>
+                <span style="font-size:0.85rem; color:#555;">選択肢: ${preview}</span>
             </div>
         </div>
-        <div class="list-actions">${actionHtml}</div>
+        <div class="list-actions">
+            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
+            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
+            <button class="btn-edit" onclick="window.startEdit('${localIndex}')">編集</button>
+            <button class="btn-delete" onclick="window.startDelete('${localIndex}')">削除</button>
+        </div>
     `;
     container.appendChild(item);
 }
@@ -252,17 +233,22 @@ window.startEdit = function(localIndex) {
     document.getElementById('btnName').value = btn.name;
     document.getElementById('formTitle').innerText = "ボタンの内容を編集中";
     document.getElementById('submitBtn').innerText = "修正内容を上書き保存する";
-    document.getElementById('submitBtn').classList.add('btn-action');
 
     const group = document.getElementById('optionsGroup');
     group.innerHTML = "";
     btn.options.forEach((opt, i) => {
         const newItem = document.createElement('div');
-        newItem.className = 'option-item';
-        newItem.innerHTML = `<input type="text" class="roulette-option-input" value="${opt}" placeholder="選択肢 ${i + 1}">`;
+        newItem.className = 'option-item-row';
+        if (i === btn.options.length - 1) {
+            newItem.innerHTML = `
+                <input type="text" class="roulette-option-input input-cute" value="${opt}">
+                <button type="button" class="btn-plus" onclick="window.addOptionField()">+</button>
+            `;
+        } else {
+            newItem.innerHTML = `<input type="text" class="roulette-option-input input-cute" value="${opt}">`;
+        }
         group.appendChild(newItem);
     });
-    document.getElementById('creatorArea').scrollIntoView({ behavior: 'smooth' });
 };
 
 window.startDelete = function(localIndex) {
@@ -282,8 +268,6 @@ window.selectButton = function(name, options) {
     const playArea = document.getElementById('activePlayArea');
     if (playArea && options && options.length >= 2) {
         playArea.style.display = "block";
-        document.getElementById('creatorArea').style.display = "none";
-        document.getElementById('listArea').style.display = "none";
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 };
@@ -291,15 +275,10 @@ window.selectButton = function(name, options) {
 window.closePlayArea = function() {
     window.playClickSound();
     document.getElementById('activePlayArea').style.display = "none";
-    document.getElementById('creatorArea').style.display = "block";
-    document.getElementById('listArea').style.display = "block";
 };
 
 window.startRouletteOverlay = function() {
-    if (!currentButtonData.options || currentButtonData.options.length < 2) {
-        alert("ボタンが選択されていません。");
-        return;
-    }
+    if (!currentButtonData.options || currentButtonData.options.length < 2) return;
     window.playClickSound();
     document.getElementById('rouletteOverlay').style.display = "flex";
     document.getElementById('rouletteTitle').innerText = currentButtonData.name;
@@ -314,7 +293,7 @@ window.closeOverlay = function() { window.playClickSound(); document.getElementB
 
 function drawRouletteWheel() {
     const canvas = document.getElementById("wheelCanvas");
-    if (canvas.getContext) {
+    if (canvas && canvas.getContext) {
         const len = currentButtonData.options.length;
         arc = Math.PI / (len / 2);
         ctx = canvas.getContext("2d");
@@ -346,7 +325,8 @@ function rotateWheel() {
     const len = currentButtonData.options.length;
     const degrees = startAngle * 180 / Math.PI + 90; const arcd = arc * 180 / Math.PI;
     const currentIndex = Math.floor((360 - (degrees % 360)) / arcd) % len;
-    if (currentIndex !== lastTargetIndex) { playTickSound(); lastTargetIndex = currentIndex; }
+    const finalCurrentIndex = currentIndex < 0 ? currentIndex + len : currentIndex;
+    if (finalCurrentIndex !== lastTargetIndex) { playTickSound(); lastTargetIndex = finalCurrentIndex; }
     spinTimeout = setTimeout(rotateWheel, 30);
 }
 
@@ -357,11 +337,11 @@ function stopRotateWheel() {
     const index = Math.floor((360 - (degrees % 360)) / arcd) % len;
     const finalIndex = index < 0 ? index + len : index; const resultText = currentButtonData.options[finalIndex];
     document.getElementById('resultOutput').innerHTML = `【 ${resultText} 】に決定！`;
-    if (isSoundEnabled) {
-        playCuteTone(523.25, 0.2, 0.1, 'sine'); setTimeout(() => playCuteTone(659.25, 0.2, 0.1, 'sine'), 80);
-        setTimeout(() => playCuteTone(783.99, 0.2, 0.1, 'sine'), 160); setTimeout(() => playCuteTone(1046.50, 0.2, 0.1, 'sine'), 240);
-        setTimeout(() => { playCuteTone(1318.51, 0.5, 0.08, 'sine'); playCuteTone(1046.50, 0.5, 0.08, 'sine'); }, 320);
-    }
+    
+    playCuteTone(523.25, 0.2, 0.1, 'sine'); setTimeout(() => playCuteTone(659.25, 0.2, 0.1, 'sine'), 80);
+    setTimeout(() => playCuteTone(783.99, 0.2, 0.1, 'sine'), 160); setTimeout(() => playCuteTone(1046.50, 0.2, 0.1, 'sine'), 240);
+    setTimeout(() => { playCuteTone(1318.51, 0.5, 0.08, 'sine'); playCuteTone(1046.50, 0.5, 0.08, 'sine'); }, 320);
+    
     confetti({ particleCount: 140, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => { confetti({ particleCount: 80, spread: 100, origin: { y: 0.5 } }); }, 250);
     setupTwitterButton(resultText);
@@ -369,20 +349,15 @@ function stopRotateWheel() {
 
 function easeOut(t, b, c, d) { const ts = (t /= d) * t; const tc = ts * t; return b + c * (tc + -3 * ts + 3 * t); }
 
-// 結果ツイート用ロジック（製作者クレジットの後ろにそのボタンの専用URLを付与してピタッと止める）
 function setupTwitterButton(result) {
     const tweetBtn = document.getElementById('twitterLink'); 
     const closeBtn = document.getElementById('closeBtn');
-    
     const dataObj = { n: currentButtonData.name, o: currentButtonData.options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
-    const base64 = btoa(jsonStr);
-    const safeBase64 = base64.replace(/=/g, '%3D');
-    const uniqueButtonUrl = `https://128bit-m4.github.io/color-unique-tweetbutton/?b=${safeBase64}`;
+    const base64 = btoa(jsonStr).replace(/=/g, '%3D');
+    const uniqueButtonUrl = `https://128bit-m4.github.io/color-unique-tweetbutton/?b=${base64}`;
     
     const text = `「${currentButtonData.name}」のルーレット結果：【 ${result} 】\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
-    
     tweetBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    tweetBtn.style.display = "block"; 
-    closeBtn.style.display = "block";
+    tweetBtn.style.display = "block"; closeBtn.style.display = "block";
 }
