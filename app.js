@@ -1,8 +1,4 @@
-const PRESET_BUTTONS = [
-    { name: "今日の晩ごはん決定ボタン", options: ["ラーメン", "カレーライス", "ハンバーグ", "お寿司", "パスタ", "うどん"] },
-    { name: "作業用BGMジャンル抽選器", options: ["Vocaloid", "Lo-Fi HipHop", "Synthwave", "Game Soundtrack", "J-POP"] },
-    { name: "次の休み中にやること", options: ["ゲームに補頭する", "コードを改造する", "部屋の模様替え", "一日中寝る", "映画を観る"] }
-];
+const PRESET_BUTTONS = [];
 
 let isSoundEnabled = true;
 let currentButtonData = { name: "", options: [] };
