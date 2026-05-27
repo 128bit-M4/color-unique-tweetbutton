@@ -33,7 +33,7 @@ function playCuteTone(frequency, duration, volume = 0.1, type = 'sine') {
         gain.connect(audioCtx.destination);
         osc.start();
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.02);
+        gain.gain.linearRampToValueAtTime(volume, applicationContext.currentTime + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
         osc.stop(audioCtx.currentTime + duration);
     } catch(e) { console.log(e); }
@@ -68,7 +68,7 @@ window.toggleAudioMaster = function() {
     window.initAudio(!isSoundEnabled);
 };
 
-// 安全なURLを生成する（Twitterバグ防止の置換処理入り）
+// 安全なURLを生成する（Twitterパラメータバグ対策済）
 function generateButtonUrl(name, options) {
     const dataObj = { n: name, o: options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
@@ -93,7 +93,6 @@ function loadButtonFromUrl() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🛡️ リロード直後は確実にプレイエリアを非表示にするガード
     const playArea = document.getElementById('activePlayArea');
     if (playArea) playArea.style.setProperty('display', 'none', 'important');
 
@@ -122,11 +121,11 @@ window.addOptionField = function() {
     newItem.querySelector('input').focus();
 };
 
+// 🌟 修正：作成時は強制シェアせず、おとなしくマイボタンに保存する
 window.createNewButton = function() {
     window.playClickSound();
     const name = document.getElementById('btnName').value.trim();
     const inputElements = document.getElementsByClassName('roulette-option-input');
-    const privacy = document.querySelector('input[name="btnPrivacy"]:checked').value;
     const editIndex = parseInt(document.getElementById('editIndex').value);
 
     let options = [];
@@ -138,35 +137,41 @@ window.createNewButton = function() {
     if (!name) { alert('ボタン名を入力してください。'); return; }
     if (options.length < 2) { alert('選択肢を2つ以上入力してください。'); return; }
 
-    const uniqueButtonUrl = generateButtonUrl(name, options);
-
-    if (privacy === "share") {
-        const text = `「${name}」というオリジナルガチャボタンを作ったよ！\nみんなもここから回してみてね！\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
-        
-        document.getElementById('generatedUrlInput').value = uniqueButtonUrl;
-        document.getElementById('shareFormXLink').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-        
-        document.getElementById('shareResultArea').style.display = "block";
-        document.getElementById('shareResultArea').scrollIntoView({ behavior: 'smooth' });
-    }
-
     let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     if (editIndex === -1) {
-        if(privacy === "local") localButtons.push({ name: name, options: options });
+        localButtons.push({ name: name, options: options });
+        alert('新規ガチャボタンを一覧に保存しました！');
     } else {
         localButtons[editIndex] = { name: name, options: options };
         document.getElementById('editIndex').value = "-1";
         document.getElementById('formTitle').innerText = "新規ガチャボタン作成";
         document.getElementById('submitBtn').innerText = "ボタンを作成";
         document.getElementById('submitBtn').classList.remove('btn-action');
+        alert('変更内容を上書き保存しました！');
     }
 
-    if(privacy === "local") {
-        localStorage.setItem('user_created_buttons', JSON.stringify(localButtons));
-        alert('あなただけのマイボタンを保存しました！');
-    }
+    localStorage.setItem('user_created_buttons', JSON.stringify(localButtons));
     resetForm();
     window.refreshButtonList();
+};
+
+// 🌟 🆕 独立したシェアポップアップを開く処理（URLコピペ用もここへ）
+window.openShareModal = function(name, optionsJsonStr) {
+    window.playClickSound();
+    const options = JSON.parse(decodeURIComponent(optionsJsonStr));
+    const uniqueButtonUrl = generateButtonUrl(name, options);
+
+    const text = `「${name}」というオリジナルガチャボタンを作ったよ！\nみんなもここから回してみてね！\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
+    
+    document.getElementById('generatedUrlInput').value = uniqueButtonUrl;
+    document.getElementById('shareFormXLink').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    
+    document.getElementById('shareModalOverlay').style.display = "flex";
+};
+
+window.closeShareModal = function() {
+    window.playClickSound();
+    document.getElementById('shareModalOverlay').style.display = "none";
 };
 
 window.copyShareUrl = function() {
@@ -192,35 +197,48 @@ window.refreshButtonList = function() {
     const container = document.getElementById('buttonListContainer');
     container.innerHTML = "";
     PRESET_BUTTONS.forEach(btn => {
-        renderItemRow(container, btn.name, btn.options, "おすすめ", "badge-preset", null);
+        renderItemRow(container, btn.name, btn.options, false, null);
     });
     let localButtons = JSON.parse(localStorage.getItem('user_created_buttons')) || [];
     localButtons.forEach((btn, i) => {
-        renderItemRow(container, btn.name, btn.options, "マイボタン", "badge-user", i);
+        renderItemRow(container, btn.name, btn.options, true, i);
     });
 };
 
-function renderItemRow(container, name, options, badgeText, badgeClass, localIndex) {
+// 🌟 修正：一覧アイテムに「回す」「シェア」の独立ボタンを綺麗に配置
+function renderItemRow(container, name, options, isUserCreated, localIndex) {
     const item = document.createElement('div');
     item.className = 'list-item-btn';
     const preview = options.join(', ');
-    let actionHtml = `<div class="${badgeClass}">${badgeText}</div>`;
-    if (localIndex !== null) {
+    const optionsJsonStr = encodeURIComponent(JSON.stringify(options));
+
+    let actionHtml = "";
+    if (!isUserCreated) {
+        // おすすめプリセット用の配置
         actionHtml = `
+            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
+            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
+            <div class="badge-preset">おすすめ</div>
+        `;
+    } else {
+        // 自作マイボタン用の配置（いつでも回せるし、いつでもシェアできる）
+        actionHtml = `
+            <button class="btn-play-list" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">回す</button>
+            <button class="btn-share-list" onclick="window.openShareModal('${name}', '${optionsJsonStr}')">シェア</button>
             <button class="btn-edit" onclick="window.startEdit('${localIndex}')">編集</button>
             <button class="btn-delete" onclick="window.startDelete('${localIndex}')">削除</button>
         `;
     }
+
     item.innerHTML = `
-        <div class="list-clickable-area">
+        <div class="list-clickable-area" onclick="window.selectButton('${name}', JSON.parse(decodeURIComponent('${optionsJsonStr}')))">
             <div class="list-info">
                 ${name}
-                <span>選択肢: ${preview.substring(0, 35)}${preview.length > 35 ? '...':''}</span>
+                <span>選択肢: ${preview}</span>
             </div>
         </div>
         <div class="list-actions">${actionHtml}</div>
     `;
-    item.querySelector('.list-clickable-area').onclick = () => { window.selectButton(name, options); };
     container.appendChild(item);
 }
 
@@ -332,7 +350,6 @@ function rotateWheel() {
     spinTimeout = setTimeout(rotateWheel, 30);
 }
 
-// 🌟 結果出力時のツイート文面組み立てロジック（バグ完全修正版）
 function stopRotateWheel() {
     clearTimeout(spinTimeout);
     const len = currentButtonData.options.length;
@@ -347,26 +364,22 @@ function stopRotateWheel() {
     }
     confetti({ particleCount: 140, spread: 70, origin: { y: 0.6 } });
     setTimeout(() => { confetti({ particleCount: 80, spread: 100, origin: { y: 0.5 } }); }, 250);
-    
-    // 結果が決定した直後に、現在のボタン構成から専用リンクをその場で再組み立てして引き渡す
     setupTwitterButton(resultText);
 }
 
 function easeOut(t, b, c, d) { const ts = (t /= d) * t; const tc = ts * t; return b + c * (tc + -3 * ts + 3 * t); }
 
-// 🌟 最終決定版：お節介な末尾への自動移動を防ぎ、クレジットの直後に専用URLを連結する
+// 結果ツイート用ロジック（製作者クレジットの後ろにそのボタンの専用URLを付与してピタッと止める）
 function setupTwitterButton(result) {
     const tweetBtn = document.getElementById('twitterLink'); 
     const closeBtn = document.getElementById('closeBtn');
     
-    // いま回したボタンから直接個別専用URLをビルドする
     const dataObj = { n: currentButtonData.name, o: currentButtonData.options };
     const jsonStr = unescape(encodeURIComponent(JSON.stringify(dataObj)));
     const base64 = btoa(jsonStr);
     const safeBase64 = base64.replace(/=/g, '%3D');
     const uniqueButtonUrl = `https://128bit-m4.github.io/color-unique-tweetbutton/?b=${safeBase64}`;
     
-    // テンプレート通りの文字列構築（&url= パラメータは破棄して text だけで完結させる）
     const text = `「${currentButtonData.name}」のルーレット結果：【 ${result} 】\n\n#UniqueButtonMaker #128bitApps\n\n製作者:@128bit_VideoApp ${uniqueButtonUrl}`;
     
     tweetBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
