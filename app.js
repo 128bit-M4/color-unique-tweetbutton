@@ -1,4 +1,3 @@
-// 🛠️ 不要なプリセットデータを削除して空にしました
 const PRESET_BUTTONS = [];
 
 let isSoundEnabled = true;
@@ -299,13 +298,31 @@ window.startRouletteOverlay = function() {
     document.getElementById('spinBtn').style.display = "block";
     document.getElementById('twitterLink').style.display = "none";
     document.getElementById('closeBtn').style.display = "none";
+    
+    // 🛠️ 凡例（色リスト）の表示枠をオーバーレイ内に動的に用意する
+    let legendContainer = document.getElementById("rouletteLegend");
+    if (!legendContainer) {
+        legendContainer = document.createElement("div");
+        legendContainer.id = "rouletteLegend";
+        // スタイリッシュに並べるためのCSSをJS側から直貼り
+        legendContainer.style.cssText = "display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0; max-height:100px; overflow-y:auto; padding:5px;";
+        const resultOutput = document.getElementById("resultOutput");
+        resultOutput.parentNode.insertBefore(legendContainer, resultOutput);
+    }
+    
     drawRouletteWheel();
 };
 
-window.closeOverlay = function() { window.playClickSound(); document.getElementById('rouletteOverlay').style.display = "none"; };
+window.closeOverlay = function() { 
+    window.playClickSound(); 
+    document.getElementById('rouletteOverlay').style.display = "none"; 
+};
 
+// 🎯 修正版：ルーレット内は「色だけ」にして、下に「色対応リスト」を生成する
 function drawRouletteWheel() {
     const canvas = document.getElementById("wheelCanvas");
+    const legendContainer = document.getElementById("rouletteLegend");
+    
     if (canvas && canvas.getContext) {
         const len = currentButtonData.options.length;
         arc = Math.PI / (len / 2);
@@ -314,9 +331,15 @@ function drawRouletteWheel() {
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 3;
 
+        // 凡例リストの中身を一旦リセット
+        if (legendContainer) legendContainer.innerHTML = "";
+
         for(let i = 0; i < len; i++) {
             const angle = startAngle + i * arc;
-            ctx.fillStyle = colors[i % colors.length];
+            const segmentColor = colors[i % colors.length];
+            
+            // 1. ルーレットのセクター（扇形）を描画（文字は一切描かない！）
+            ctx.fillStyle = segmentColor;
             ctx.beginPath(); 
             ctx.moveTo(150, 150); 
             ctx.arc(150, 150, 140, angle, angle + arc, false); 
@@ -324,22 +347,13 @@ function drawRouletteWheel() {
             ctx.fill(); 
             ctx.stroke();
 
-            if (len >= 8) {
-                continue; 
+            // 2. ルーレットの下に表示する「カラーバッジ付きの凡例」を生成して追加
+            if (legendContainer) {
+                const item = document.createElement("div");
+                item.style.cssText = "display:flex; align-items:center; gap:5px; background:#f1f5f9; padding:4px 10px; border-radius:15px; font-size:0.85rem; font-weight:700; color:#334155;";
+                item.innerHTML = `<span style="display:inline-block; width:12px; height:12px; background-color:${segmentColor}; border-radius:50%;"></span> ${currentButtonData.options[i]}`;
+                legendContainer.appendChild(item);
             }
-
-            ctx.save(); 
-            ctx.fillStyle = "#ffffff"; 
-            ctx.font = "bold 13px sans-serif";
-            
-            ctx.translate(150 + Math.cos(angle + arc / 2) * 88, 150 + Math.sin(angle + arc / 2) * 88); 
-            ctx.rotate(angle + arc / 2 + Math.PI / 2);
-            
-            const text = currentButtonData.options[i];
-            const safeText = text.length > 7 ? text.substring(0, 6) + ".." : text;
-            
-            ctx.fillText(safeText, -ctx.measureText(safeText).width / 2, 0); 
-            ctx.restore();
         }
     }
 }
