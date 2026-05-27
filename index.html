@@ -39,21 +39,7 @@
         </div>
 
         <div class="form-group">
-            <label>2. 保存・公開方法の選択</label>
-            <div class="privacy-selector">
-                <label class="radio-label">
-                    <input type="radio" name="btnPrivacy" value="local" checked onclick="window.playClickSound()">
-                    <span class="radio-custom"></span> 自分だけ（この端末のリストに保存）
-                </label>
-                <label class="radio-label">
-                    <input type="radio" name="btnPrivacy" value="share" onclick="window.playClickSound()">
-                    <span class="radio-custom"></span> X(Twitter)で共有（リンクを生成）
-                </label>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>3. ルーレットの選択肢</label>
+            <label>2. ルーレットの選択肢</label>
             <div class="options-container" id="optionsGroup">
                 <div class="option-item">
                     <input type="text" class="roulette-option-input" placeholder="選択肢 1">
@@ -67,24 +53,28 @@
         <button class="btn btn-create" id="submitBtn" onclick="window.createNewButton()">ボタンを作成</button>
     </div>
 
-    <div class="container" id="shareResultArea" style="display: none; background: linear-gradient(135deg, #e0e7ff 0%, #ffffff 100%); border: 2px solid #667eea;">
-        <h2 class="section-title" style="color: #4f46e5;">ボタンの共有リンクが完成しました</h2>
-        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">以下のURLをコピーしてシェアするか、X(Twitter)で開くボタンから投稿してください。</p>
-        <div class="form-group">
-            <input type="text" id="generatedUrlInput" readonly onclick="this.select()" style="background: #fff; font-family: monospace; font-size: 0.9rem; color: #4f46e5; border-color: #a5b4fc;">
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-create" onclick="window.copyShareUrl()" style="flex: 1; padding: 12px; font-size: 1rem;">URLをコピー</button>
-            <a id="shareFormXLink" class="btn btn-twitter" href="#" target="_blank" style="flex: 1; margin: 0; padding: 12px; font-size: 1rem;">X(Twitter)で開く</a>
-        </div>
-        <button class="btn btn-action btn-secondary" onclick="document.getElementById('shareResultArea').style.display='none'; window.playClickSound();" style="margin-top: 15px; padding: 10px; font-size: 0.9rem;">閉じる</button>
-    </div>
-
     <div class="container" id="listArea">
         <div class="list-header">
             <h2 class="section-title" style="margin:0;">ガチャボタン一覧</h2>
         </div>
         <div class="button-list" id="buttonListContainer"></div>
+    </div>
+
+    <div class="overlay" id="shareModalOverlay">
+        <div class="roulette-box" style="max-width: 460px; text-align: left;">
+            <h3 style="margin-top: 0; color: #4f46e5; font-size: 1.2rem;">このボタンの共有リンク</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px; line-height: 1.4;">
+                生成された専用URLをコピーして共有するか、直接X(Twitter)に投稿することができます。
+            </p>
+            <div class="form-group">
+                <input type="text" id="generatedUrlInput" readonly onclick="this.select()" style="background: #f8fafc; font-family: monospace; font-size: 0.85rem; color: #4f46e5; border-color: #cbd5e0;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-create" onclick="window.copyShareUrl()" style="flex: 1; padding: 12px; font-size: 0.95rem;">URLをコピー</button>
+                <a id="shareFormXLink" class="btn btn-twitter" href="#" target="_blank" style="flex: 1; margin: 0; padding: 12px; font-size: 0.95rem;">X(Twitter)で開く</a>
+            </div>
+            <button class="btn btn-action btn-secondary" onclick="window.closeShareModal()" style="margin-top: 15px; padding: 10px; font-size: 0.9rem; width: 100%;">閉じる</button>
+        </div>
     </div>
 
     <div class="overlay" id="rouletteOverlay">
